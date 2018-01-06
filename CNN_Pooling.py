@@ -22,6 +22,7 @@ import numpy as np
 import os
 from . import conv_layer
 from . import fc_layer
+from . import batch_generator
 
 def buid_cnn():
     ##Placeholders for X and y:
@@ -94,8 +95,7 @@ def save(saver, sess, epoch, path='./model/'):
 
 def load(saver, sess, path, epoch):
     print('Loading model from %s' % path)
-    saver.restore(sess, os.path.join(
-    path, 'cnn-model.ckpt-%d' % epoch))
+    saver.restore(sess, os.path.join(path, 'cnn-model.ckpt-%d' % epoch))
 
 def train(sess, training_set, validation_set=None, initialize=True, epochs=20, shuffle=True,
     dropout=0.5, random_seed=None):
