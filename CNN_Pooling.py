@@ -20,9 +20,60 @@ y : One-hot encoding transform
 import tensorflow as tf
 import numpy as np
 import os
-from . import conv_layer
-from . import fc_layer
-from . import batch_generator
+
+def batch_generator(X,y,batch_size=64,shuffle=False,random_seed=None):
+    idx = np.arange(y.shape[0])
+    if shuffle:
+        rng = np.random.RandomState(random_seed)
+        rng.shuffle(idx)
+        X = X[idx]
+        y = y[idx]
+
+    for i in range(0,X.shape[0],batch_size):
+        yield (X[i:i+batch_size,:],y[i:i+batch_size])
+
+#strides=(1,1,1,(width and height both equal one)1)
+def conv_layer(input_tensor,name,kernel_size,n_output_channels,padding_mode='SAME',strides=(1,1,1,1)):
+    with tf.variable_scope(name):
+        ##  input tensor shape:
+        ##  [batch x width x height x channels_in]
+        input_shape = input_tensor.get_shape().as_list()
+        n_input_channels = input_shape[-1]
+        weights_shape = list(kernel_size) + [n_input_channels, n_output_channels]
+        weights = tf.get_variable(name='_weights', shape=weights_shape)
+        print(weights)
+        biases = tf.get_variable(name='_biases', initializer=tf.zeros(shape=[n_output_channels]))
+        print(biases)
+        conv = tf.nn.conv2d(input=input_tensor,filter=weights, strides=strides, padding=padding_mode)
+        print(conv)
+        conv = tf.nn.bias_add(conv, biases, name='net_pre-activation')
+        print(conv)
+        conv = tf.nn.relu(conv, name='activation')
+        print(conv)
+        return conv
+
+def fc_layer(input_tensor,name,n_output_units,activation_fn=None):
+    with tf.variable_scope(name):
+        # input tensor shape:  [batch x width x height x channels_in]
+        input_shape = input_tensor.get_shape().as_list()[1:]
+        n_input_units = np.prod(input_shape)
+        if len(input_shape) > 1:
+            input_tensor = tf.reshape(input_tensor, shape=(-1, n_input_units))  # -1: batch size
+            # total : [batch x width x height x channels_in]
+            # n_input_units:[ width x height x channels_in]
+            weights_shape = [n_input_units, n_output_units]
+            weights = tf.get_variable(name='_weights', shape=weights_shape)
+            print(weights)
+            biases = tf.get_variable(name='_biases',initializer=tf.zeros(shape=[n_output_units]))
+            print(biases)
+            layer = tf.matmul(input_tensor, weights)
+            print(layer)
+            layer = tf.nn.bias_add(layer, biases, name='net_pre-activaiton')
+            print(layer)
+            if activation_fn is None: return layer
+            layer = activation_fn(layer, name='activation')
+            print(layer)
+            return layer
 
 def build_cnn():
     ##Placeholders for X and y:
@@ -77,9 +128,9 @@ def build_cnn():
 
     ## Optimizer:
 
-    #global_step = tf.Variable(0)
-    #learning_rate = tf.train.exponential_decay(learning_rate=0.1,global_step=global_step,
-    #                                          decay_steps=100, decay_rate=0.96,staircase=True)
+    global_step = tf.Variable(0)
+    learning_rate = tf.train.exponential_decay(learning_rate=0.1,global_step=global_step,
+                                              decay_steps=100, decay_rate=0.96,staircase=True)
 
     optimizer = tf.train.AdamOptimizer(learning_rate)
     optimizer = optimizer.minimize(cross_entropy_loss, name='train_op')
@@ -152,3 +203,32 @@ with g.as_default():
     build_cnn()
     ## saver:
     saver = tf.train.Saver()
+
+'''
+## create a TF session and train the CNN model
+with tf.Session(graph=g) as sess:
+    train(sess, training_set=(X_train_centered, y_train),
+    validation_set = (X_valid_centered, y_valid),initialize = True,random_seed = 123)
+
+    save(saver, sess, epoch=20)
+
+
+### Calculate prediction accuracy
+### on test set
+### restoring the saved model
+del g
+## create a new graph
+## and build the model
+g2 = tf.Graph()
+with g2.as_default():
+    tf.set_random_seed(random_seed)
+    ## build the graph
+    build_cnn()
+    ## saver:
+    saver = tf.train.Saver()
+## create a new session and restore the model
+with tf.Session(graph=g2) as sess:
+    load(saver, sess,epoch=20, path='./model/')
+    preds = predict(sess, X_test_centered,return_proba=False)
+    print('Test Accuracy: %.3f%%' % (100* np.sum(preds == y_test)/len(y_test)))
+'''
