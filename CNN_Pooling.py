@@ -24,7 +24,7 @@ from . import conv_layer
 from . import fc_layer
 from . import batch_generator
 
-def buid_cnn():
+def build_cnn():
     ##Placeholders for X and y:
     tf_x = tf.placeholder(tf.float32,shape=[None,784],name='tf_x')
     tf_y = tf.placeholder(tf.int32,shape=[None],name='tf_y')
@@ -76,9 +76,11 @@ def buid_cnn():
     name = 'cross_entropy_loss')
 
     ## Optimizer:
-    global_step = tf.Variable(0)
-    learning_rate = tf.train.exponential_decay(learning_rate=0.1,global_step=global_step,
-                                               decay_steps=100, decay_rate=0.96,staircase=True)
+
+    #global_step = tf.Variable(0)
+    #learning_rate = tf.train.exponential_decay(learning_rate=0.1,global_step=global_step,
+    #                                          decay_steps=100, decay_rate=0.96,staircase=True)
+
     optimizer = tf.train.AdamOptimizer(learning_rate)
     optimizer = optimizer.minimize(cross_entropy_loss, name='train_op')
 
@@ -137,3 +139,16 @@ def predict(sess, X_test, return_proba=False):
         return sess.run('probabilities:0', feed_dict=feed)
     else:
         return sess.run('labels:0', feed_dict=feed)
+
+
+## Define hyperparameters
+learning_rate = 1e-4
+random_seed = 123
+## create a graph
+g = tf.Graph()
+with g.as_default():
+    tf.set_random_seed(random_seed)
+    ## build the graph
+    build_cnn()
+    ## saver:
+    saver = tf.train.Saver()
