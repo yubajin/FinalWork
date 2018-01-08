@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 # Import MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("/tmp/data/", one_hot=False)
+# 加载手写数据
+mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 
 # Visualize decoder setting
