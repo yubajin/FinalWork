@@ -51,7 +51,6 @@ def encoder(x):
                                    biases['encoder_b2']))
     return layer_2
 
-
 # Building the decoder
 def decoder(x):
     # Encoder Hidden layer with sigmoid activation #1
